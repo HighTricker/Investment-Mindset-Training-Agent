@@ -1,0 +1,32 @@
+# === 内部开发资料（不推送） ===
+开发文档/
+项目需求.md
+开发计划.md
+devlog.md
+prompt/
+CLAUDE.md
+.claude/
+
+# === 数据库 ===
+investment_data/*.db
+
+# === 前端 ===
+frontend/node_modules/
+frontend/dist/
+
+# === 后端 ===
+backend/__pycache__/
+backend/.venv/
+backend/*.pyc
+
+# === 环境变量 ===
+.env
+.env.local
+
+# === IDE ===
+.vscode/
+.idea/
+
+# === 系统文件 ===
+.DS_Store
+Thumbs.db
