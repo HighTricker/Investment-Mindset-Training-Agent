@@ -1,5 +1,5 @@
 {
-  "_note": "投资报告邮件样式配置。修改后点击 P5 页面的「预览」按钮即可查看效果。样式沿用自旧项目 E:/invest_angent/src/services/email_sender.py 的 build_report_html 函数硬编码值。",
+  "_note": "【V2 阶段使用】投资报告邮件样式配置。MVP 阶段 P5 页面不实现，此文件为 V2 阶段物料预先准备。V2 启用后：修改此文件后点击 P5 页面的「预览」按钮即可查看效果。样式沿用自旧项目 E:/invest_angent/src/services/email_sender.py 的 build_report_html 函数硬编码值。",
 
   "style": {
     "colors": {
