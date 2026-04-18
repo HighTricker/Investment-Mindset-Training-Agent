@@ -22,3 +22,25 @@ class SymbolLookupResponse(SymbolInfo):
     """接口 #1 GET /market/symbol-lookup 的响应：在 SymbolInfo 基础上加汇率。"""
 
     exchange_rate_to_cny: float = Field(..., gt=0, description="1 单位原币 = 多少 CNY")
+
+
+# ============================================================
+# POST /market/refresh 响应（API #16）
+# ============================================================
+class FailedAsset(BaseModel):
+    asset_id: int
+    symbol: str
+    error: str
+
+
+class FailedCurrency(BaseModel):
+    currency: str
+    error: str
+
+
+class RefreshResponse(BaseModel):
+    prices_updated: int
+    rates_updated: int
+    failed_assets: list[FailedAsset]
+    failed_currencies: list[FailedCurrency]
+    refreshed_at: str
