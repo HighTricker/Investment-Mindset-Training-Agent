@@ -16,7 +16,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    cors_origins: list[str] = ["http://localhost:5173"]
+    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     db_path: str = "../investment_data/portfolio.db"
     log_level: str = "INFO"
 
