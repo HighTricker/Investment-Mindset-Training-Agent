@@ -20,5 +20,13 @@ class Settings(BaseSettings):
     db_path: str = "../investment_data/portfolio.db"
     log_level: str = "INFO"
 
+    @property
+    def database_url(self) -> str:
+        """把 db_path（相对 backend/）解析为 SQLAlchemy 绝对路径 URL。"""
+        path = Path(self.db_path)
+        if not path.is_absolute():
+            path = BACKEND_ROOT / path
+        return f"sqlite:///{path.resolve().as_posix()}"
+
 
 settings = Settings()
