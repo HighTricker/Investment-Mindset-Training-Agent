@@ -18,11 +18,14 @@ from app.models.transaction import Transaction
 from app.schemas.asset import (
     AddAssetRequest,
     AddAssetResponse,
+    AssetHeader,
     AssetItem,
     AssetListResponse,
     AssetSummary,
+    AssetTransactionsResponse,
     BestWorstAsset,
     DeleteAssetRequest,
+    TransactionDetailItem,
 )
 from app.services.calculators import (
     aggregate_transactions,
@@ -393,4 +396,56 @@ def delete_asset(
     db.commit()
     logger.info(
         "asset closed: id=%s symbol=%s reason=%r", asset.id, asset.symbol, reason
+    )
+
+
+# ============================================================
+# GET /assets/{asset_id}/transactions（API #16）
+# ============================================================
+@router.get(
+    "/{asset_id}/transactions",
+    response_model=AssetTransactionsResponse,
+    summary="获取单资产交易历史（API #16）",
+)
+def list_asset_transactions(
+    asset_id: int = Path(..., gt=0),
+    db: Session = Depends(get_db),
+) -> AssetTransactionsResponse:
+    asset = db.get(Asset, asset_id)
+    if asset is None:
+        raise business_error(
+            status.HTTP_404_NOT_FOUND,
+            ErrorCode.ASSET_NOT_FOUND,
+            "资产不存在",
+        )
+
+    tx_rows = (
+        db.execute(
+            select(Transaction)
+            .where(Transaction.asset_id == asset_id)
+            .order_by(Transaction.date.desc())
+        )
+        .scalars()
+        .all()
+    )
+
+    return AssetTransactionsResponse(
+        asset=AssetHeader(
+            asset_id=asset.id,
+            symbol=asset.symbol,
+            name=asset.name,
+            is_active=bool(asset.is_active),
+        ),
+        transactions=[
+            TransactionDetailItem(
+                transaction_id=t.id,
+                type=t.type,
+                date=t.date,
+                quantity=t.quantity,
+                price=t.price,
+                exchange_rate_to_cny=t.exchange_rate_to_cny,
+                reason=t.reason,
+            )
+            for t in tx_rows
+        ],
     )

@@ -84,3 +84,32 @@ class AssetSummary(BaseModel):
 class AssetListResponse(BaseModel):
     summary: AssetSummary
     assets: list[AssetItem]
+
+
+# ============================================================
+# GET /assets/{asset_id}/transactions 响应结构（API #16）
+# ============================================================
+class AssetHeader(BaseModel):
+    """资产头部信息（仅基础字段，不含派生计算）。"""
+
+    asset_id: int
+    symbol: str
+    name: str
+    is_active: bool
+
+
+class TransactionDetailItem(BaseModel):
+    """单笔交易明细（含 reason 和 exchange_rate_to_cny，服务于 P3.1 历史展示）。"""
+
+    transaction_id: int
+    type: str
+    date: str
+    quantity: float
+    price: float
+    exchange_rate_to_cny: float
+    reason: str | None
+
+
+class AssetTransactionsResponse(BaseModel):
+    asset: AssetHeader
+    transactions: list[TransactionDetailItem]
