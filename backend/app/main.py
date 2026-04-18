@@ -8,7 +8,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.logging import setup_logging
-from app.routers import assets, cash_accounts, health, income, market, transactions, user_settings
+from app.routers import (
+    assets,
+    cash_accounts,
+    health,
+    income,
+    market,
+    metrics,
+    transactions,
+    user_settings,
+)
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -34,5 +43,6 @@ app.include_router(transactions.router, prefix="/api")
 app.include_router(user_settings.router, prefix="/api")
 app.include_router(cash_accounts.router, prefix="/api")
 app.include_router(income.router, prefix="/api")
+app.include_router(metrics.router, prefix="/api")
 
 logger.info("FastAPI app initialized; CORS origins=%s", settings.cors_origins)
