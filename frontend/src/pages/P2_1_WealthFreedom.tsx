@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import CashSection from '../components/p2_1/CashSection'
 import TargetCards from '../components/p2_1/TargetCards'
 import { useWealthFreedom } from '../hooks/useWealthFreedom'
 
@@ -30,9 +31,11 @@ export default function P2_1_WealthFreedom() {
         </div>
       </section>
 
+      <CashSection />
+
       <section className="rounded-comfortable border border-dashed border-black/15 bg-brand-light-gray/40 p-8 text-center">
         <p className="text-body text-fg-tertiary">
-          现金分布 / 收入管理 / 财富自由倒计时 将在 3.3c ~ 3.3e 实现
+          收入管理 / 财富自由倒计时 将在 3.3d ~ 3.3e 实现
         </p>
       </section>
     </div>
