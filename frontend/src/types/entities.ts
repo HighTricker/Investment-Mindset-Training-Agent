@@ -1,6 +1,8 @@
 import type {
   AssetCategory,
   AssetCurrency,
+  CashOrIncomeCurrency,
+  IncomeCategory,
   TransactionType,
 } from './enums'
 
@@ -76,4 +78,75 @@ export interface RefreshResponse {
   failed_assets: RefreshFailedAsset[]
   failed_currencies: RefreshFailedCurrency[]
   refreshed_at: string
+}
+
+export interface UserSettings {
+  target_monthly_living: number
+  target_living_currency: CashOrIncomeCurrency
+  target_passive_income: number
+  target_passive_currency: CashOrIncomeCurrency
+  target_cash_savings: number
+  target_cash_currency: CashOrIncomeCurrency
+  email: string | null
+  updated_at: string
+}
+
+export interface CashAccount {
+  account_id: number
+  name: string
+  amount: number
+  currency: CashOrIncomeCurrency
+  created_at?: string
+  updated_at: string
+}
+
+export interface CashAccountsListResponse {
+  accounts: CashAccount[]
+}
+
+export interface IncomeRecord {
+  income_id: number
+  date: string
+  name: string
+  category: IncomeCategory
+  amount: number
+  currency: CashOrIncomeCurrency
+  note: string | null
+  created_at: string
+}
+
+export interface IncomeCategorySummary {
+  category: IncomeCategory
+  current_month_total_cny: number
+  last_month_total_cny: number
+  growth_rate: number | null
+}
+
+export interface IncomeListResponse {
+  view_month: string
+  summary: IncomeCategorySummary[]
+  records: IncomeRecord[]
+}
+
+export interface WealthFreedomAnalysisText {
+  line1: string
+  line2: string
+}
+
+export interface WealthFreedomMetrics {
+  achievement_rate: number
+  current_hourly_income_cny: number
+  target_hourly_income_cny: number
+  current_annualized_return_rate: number | null
+  required_investment_principal_cny: number | null
+  target_total_assets_cny: number
+  current_total_cash_cny: number
+  current_total_investment_cny: number
+  current_total_assets_cny: number
+  asset_gap_cny: number
+  monthly_savings_cny: number
+  predicted_freedom_date: string | null
+  years_months_remaining: string | null
+  analysis_text: WealthFreedomAnalysisText | null
+  has_prediction: boolean
 }

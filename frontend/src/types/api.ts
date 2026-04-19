@@ -1,4 +1,9 @@
-import type { AssetCategory, AssetCurrency } from './enums'
+import type {
+  AssetCategory,
+  AssetCurrency,
+  CashOrIncomeCurrency,
+  IncomeCategory,
+} from './enums'
 
 export interface SymbolLookupResponse {
   symbol: string
@@ -52,4 +57,35 @@ export interface TransactionResponse {
 
 export interface CloseAssetRequest {
   reason: string | null
+}
+
+export interface UpdateUserSettingsRequest {
+  target_monthly_living?: number
+  target_living_currency?: CashOrIncomeCurrency
+  target_passive_income?: number
+  target_passive_currency?: CashOrIncomeCurrency
+  target_cash_savings?: number
+  target_cash_currency?: CashOrIncomeCurrency
+  email?: string | null
+}
+
+export interface AddCashAccountRequest {
+  name: string
+  amount: number
+  currency: CashOrIncomeCurrency
+}
+
+export interface UpdateCashAccountRequest {
+  name?: string
+  amount?: number
+  currency?: CashOrIncomeCurrency
+}
+
+export interface AddIncomeRequest {
+  date: string
+  name: string
+  category: IncomeCategory
+  amount: number
+  currency: CashOrIncomeCurrency
+  note: string | null
 }
