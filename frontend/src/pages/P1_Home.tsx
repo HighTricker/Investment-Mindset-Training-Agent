@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import AddAssetCard from '../components/common/AddAssetCard'
 import AssetCard from '../components/common/AssetCard'
+import AssetsTable from '../components/common/AssetsTable'
 import BestWorstCards from '../components/common/BestWorstCards'
 import RefreshButton from '../components/common/RefreshButton'
 import SummaryCard from '../components/common/SummaryCard'
@@ -98,6 +99,13 @@ export default function P1_Home() {
             <AddAssetCard onClick={() => setDialogOpen(true)} />
           </div>
         )}
+      </section>
+
+      <section>
+        <h2 className="text-tile-heading text-fg-primary">资产明细</h2>
+        <div className="mt-6">
+          <AssetsTable assets={assets} />
+        </div>
       </section>
 
       <AddAssetDialog
