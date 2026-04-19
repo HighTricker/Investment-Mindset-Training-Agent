@@ -22,4 +22,4 @@ class UserSetting(Base):
     target_cash_savings: Mapped[float] = mapped_column(default=0)
     target_cash_currency: Mapped[str] = mapped_column(default="CNY")
     email: Mapped[str | None] = mapped_column(nullable=True)
-    updated_at: Mapped[str] = mapped_column(server_default=text("CURRENT_TIMESTAMP"))
+    updated_at: Mapped[str] = mapped_column(server_default=text("(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"))

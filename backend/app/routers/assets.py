@@ -423,7 +423,7 @@ def list_asset_transactions(
         db.execute(
             select(Transaction)
             .where(Transaction.asset_id == asset_id)
-            .order_by(Transaction.date.desc())
+            .order_by(Transaction.date.desc(), Transaction.id.desc())
         )
         .scalars()
         .all()

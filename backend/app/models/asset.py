@@ -20,4 +20,4 @@ class Asset(Base):
     category: Mapped[str]
     currency: Mapped[str]
     is_active: Mapped[int] = mapped_column(default=1)
-    created_at: Mapped[str] = mapped_column(server_default=text("CURRENT_TIMESTAMP"))
+    created_at: Mapped[str] = mapped_column(server_default=text("(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"))

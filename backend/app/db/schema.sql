@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS assets (
     category   TEXT    NOT NULL CHECK (category IN ('美股', '港股', '中概股', '加密货币', '黄金', '美国国债', '中国国债')),
     currency   TEXT    NOT NULL CHECK (currency IN ('CNY', 'USD', 'HKD', 'EUR', 'GBP', 'CHF')),
     is_active  INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
-    created_at TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 -- 部分唯一索引：仅活跃资产 symbol 唯一（支持同一 symbol 的历史多次持仓周期）
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     exchange_rate_to_cny REAL    NOT NULL,
     reason               TEXT,
     date                 TEXT    NOT NULL,
-    created_at           TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at           TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE RESTRICT
 );
 
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS prices (
     asset_id    INTEGER NOT NULL,
     date        TEXT    NOT NULL,
     close_price REAL    NOT NULL,
-    created_at  TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE RESTRICT,
     UNIQUE (asset_id, date)
 );
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS exchange_rates (
     currency    TEXT    NOT NULL CHECK (currency IN ('USD', 'HKD', 'EUR', 'GBP', 'CHF')),
     rate_to_cny REAL    NOT NULL,
     date        TEXT    NOT NULL,
-    created_at  TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     UNIQUE (currency, date)
 );
 
@@ -79,8 +79,8 @@ CREATE TABLE IF NOT EXISTS cash_accounts (
     amount     REAL    NOT NULL DEFAULT 0,
     currency   TEXT    NOT NULL DEFAULT 'CNY' CHECK (currency IN ('CNY', 'USD')),
     is_active  INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
-    created_at TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS income (
     amount     REAL    NOT NULL,
     currency   TEXT    NOT NULL DEFAULT 'CNY' CHECK (currency IN ('CNY', 'USD')),
     note       TEXT,
-    created_at TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 -- 月份聚合查询索引
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS news_cache (
     summary      TEXT,
     source_url   TEXT,
     published_at TEXT    NOT NULL,
-    created_at   TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at   TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE RESTRICT
 );
 
@@ -132,5 +132,5 @@ CREATE TABLE IF NOT EXISTS user_settings (
     target_cash_savings      REAL    NOT NULL DEFAULT 0,
     target_cash_currency     TEXT    NOT NULL DEFAULT 'CNY' CHECK (target_cash_currency IN ('CNY', 'USD')),
     email                    TEXT,
-    updated_at               TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at               TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );

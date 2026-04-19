@@ -20,5 +20,5 @@ class CashAccount(Base):
     amount: Mapped[float] = mapped_column(default=0)
     currency: Mapped[str] = mapped_column(default="CNY")
     is_active: Mapped[int] = mapped_column(default=1)
-    created_at: Mapped[str] = mapped_column(server_default=text("CURRENT_TIMESTAMP"))
-    updated_at: Mapped[str] = mapped_column(server_default=text("CURRENT_TIMESTAMP"))
+    created_at: Mapped[str] = mapped_column(server_default=text("(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"))
+    updated_at: Mapped[str] = mapped_column(server_default=text("(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"))

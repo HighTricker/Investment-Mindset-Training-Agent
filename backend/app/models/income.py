@@ -21,4 +21,4 @@ class Income(Base):
     amount: Mapped[float]
     currency: Mapped[str] = mapped_column(default="CNY")
     note: Mapped[str | None] = mapped_column(nullable=True)
-    created_at: Mapped[str] = mapped_column(server_default=text("CURRENT_TIMESTAMP"))
+    created_at: Mapped[str] = mapped_column(server_default=text("(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"))

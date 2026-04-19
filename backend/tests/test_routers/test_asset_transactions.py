@@ -152,3 +152,22 @@ def test_get_asset_transactions_invalid_asset_id_zero(client: TestClient) -> Non
     """asset_id=0 被 Pydantic Path gt=0 校验拦截，返回 422。"""
     resp = client.get("/api/assets/0/transactions")
     assert resp.status_code == 422
+
+
+def test_get_asset_transactions_same_date_multiple_secondary_sort_by_id(
+    client: TestClient,
+) -> None:
+    """同日期多笔 transaction 按 id DESC 作次级排序（新交易优先）。"""
+    asset_id = _create_aapl(client, date="2026-04-01")
+    tx_id_2 = _add_transaction(client, asset_id, date="2026-04-10", reason="第二笔")
+    tx_id_3 = _add_transaction(client, asset_id, date="2026-04-10", reason="第三笔")
+
+    resp = client.get(f"/api/assets/{asset_id}/transactions")
+    assert resp.status_code == 200, resp.text
+    txs = resp.json()["transactions"]
+    assert len(txs) == 3
+
+    assert [t["date"] for t in txs] == ["2026-04-10", "2026-04-10", "2026-04-01"]
+    assert txs[0]["transaction_id"] == tx_id_3
+    assert txs[1]["transaction_id"] == tx_id_2
+    assert txs[0]["transaction_id"] > txs[1]["transaction_id"] > txs[2]["transaction_id"]

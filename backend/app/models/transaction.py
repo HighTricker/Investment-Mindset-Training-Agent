@@ -22,4 +22,4 @@ class Transaction(Base):
     exchange_rate_to_cny: Mapped[float]
     reason: Mapped[str | None] = mapped_column(nullable=True)
     date: Mapped[str]
-    created_at: Mapped[str] = mapped_column(server_default=text("CURRENT_TIMESTAMP"))
+    created_at: Mapped[str] = mapped_column(server_default=text("(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"))

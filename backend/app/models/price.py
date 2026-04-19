@@ -14,4 +14,4 @@ class Price(Base):
     asset_id: Mapped[int] = mapped_column(ForeignKey("assets.id", ondelete="RESTRICT"))
     date: Mapped[str]
     close_price: Mapped[float]
-    created_at: Mapped[str] = mapped_column(server_default=text("CURRENT_TIMESTAMP"))
+    created_at: Mapped[str] = mapped_column(server_default=text("(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"))
