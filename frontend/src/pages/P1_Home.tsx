@@ -1,8 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import AddAssetCard from '../components/common/AddAssetCard'
 import AssetCard from '../components/common/AssetCard'
 import BestWorstCards from '../components/common/BestWorstCards'
 import RefreshButton from '../components/common/RefreshButton'
 import SummaryCard from '../components/common/SummaryCard'
+import AddAssetDialog from '../components/dialogs/AddAssetDialog'
 import { useAssets } from '../hooks/useAssets'
 import { formatCurrency, formatPercent } from '../utils/formatters'
 
@@ -15,6 +17,7 @@ function deriveTrend(
 
 export default function P1_Home() {
   const { assets, summary, loading, error, fetchAssets } = useAssets()
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   useEffect(() => {
     void fetchAssets({ includeClosed: false })
@@ -80,19 +83,20 @@ export default function P1_Home() {
         {error && (
           <p className="mt-4 text-body text-finance-down">⚠️ {error}</p>
         )}
-        {!loading && !error && assets.length === 0 && (
-          <p className="mt-4 text-body text-fg-tertiary">
-            暂无持仓资产（3.2d 将加"+"新增卡实现添加）
-          </p>
-        )}
-        {assets.length > 0 && (
+        {!loading && !error && (
           <div className="mt-6 grid grid-cols-3 gap-4">
             {assets.map((asset) => (
               <AssetCard key={asset.asset_id} asset={asset} />
             ))}
+            <AddAssetCard onClick={() => setDialogOpen(true)} />
           </div>
         )}
       </section>
+
+      <AddAssetDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+      />
     </div>
   )
 }

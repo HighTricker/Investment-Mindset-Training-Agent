@@ -5,10 +5,14 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { fetchAssets as fetchAssetsApi } from '../services/api/assets'
+import {
+  addAsset as addAssetApi,
+  fetchAssets as fetchAssetsApi,
+} from '../services/api/assets'
 import { refreshMarket as refreshMarketApi } from '../services/api/market'
 import { toReadableMessage } from '../utils/errors'
 import type { RefreshResponse } from '../types/entities'
+import type { AddAssetRequest, AddAssetResponse } from '../types/api'
 import {
   AssetsContext,
   type AssetsContextValue,
@@ -53,6 +57,15 @@ export function AssetsProvider({ children }: { children: ReactNode }) {
     [],
   )
 
+  const addAsset = useCallback(
+    async (payload: AddAssetRequest): Promise<AddAssetResponse> => {
+      const result = await addAssetApi(payload)
+      await fetchAssets({ includeClosed, force: true })
+      return result
+    },
+    [fetchAssets, includeClosed],
+  )
+
   const refreshMarket = useCallback(async (): Promise<RefreshResponse | null> => {
     setRefreshing(true)
     setError(null)
@@ -83,6 +96,7 @@ export function AssetsProvider({ children }: { children: ReactNode }) {
       isFetched,
       fetchAssets,
       refreshMarket,
+      addAsset,
     }),
     [
       assets,
@@ -94,6 +108,7 @@ export function AssetsProvider({ children }: { children: ReactNode }) {
       isFetched,
       fetchAssets,
       refreshMarket,
+      addAsset,
     ],
   )
 

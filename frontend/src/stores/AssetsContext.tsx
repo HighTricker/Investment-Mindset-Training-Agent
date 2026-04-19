@@ -4,6 +4,7 @@ import type {
   AssetsSummary,
   RefreshResponse,
 } from '../types/entities'
+import type { AddAssetRequest, AddAssetResponse } from '../types/api'
 
 export interface AssetsContextValue {
   assets: AssetDetail[]
@@ -18,6 +19,7 @@ export interface AssetsContextValue {
     force?: boolean
   }) => Promise<void>
   refreshMarket: () => Promise<RefreshResponse | null>
+  addAsset: (payload: AddAssetRequest) => Promise<AddAssetResponse>
 }
 
 export const AssetsContext = createContext<AssetsContextValue | undefined>(
