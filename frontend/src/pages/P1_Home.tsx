@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
 import AssetCard from '../components/common/AssetCard'
+import BestWorstCards from '../components/common/BestWorstCards'
+import RefreshButton from '../components/common/RefreshButton'
 import SummaryCard from '../components/common/SummaryCard'
 import { useAssets } from '../hooks/useAssets'
 import { formatCurrency, formatPercent } from '../utils/formatters'
@@ -23,9 +25,12 @@ export default function P1_Home() {
 
   return (
     <div className="space-y-10 px-8 py-10">
-      <header>
-        <h1 className="text-section-heading text-fg-primary">P1 首页</h1>
-        <p className="mt-2 text-body text-fg-secondary">资产组合概览</p>
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-section-heading text-fg-primary">P1 首页</h1>
+          <p className="mt-2 text-body text-fg-secondary">资产组合概览</p>
+        </div>
+        <RefreshButton />
       </header>
 
       <section>
@@ -58,6 +63,13 @@ export default function P1_Home() {
             trend={profitLossTrend}
           />
         </div>
+      </section>
+
+      <section>
+        <BestWorstCards
+          best={summary?.best_asset ?? null}
+          worst={summary?.worst_asset ?? null}
+        />
       </section>
 
       <section>
