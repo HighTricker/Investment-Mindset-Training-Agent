@@ -1,16 +1,9 @@
-import { useEffect } from 'react'
 import CashSection from '../components/p2_1/CashSection'
 import IncomeSection from '../components/p2_1/IncomeSection'
 import TargetCards from '../components/p2_1/TargetCards'
-import { useWealthFreedom } from '../hooks/useWealthFreedom'
+import WealthCountdown from '../components/p2_1/WealthCountdown'
 
 export default function P2_1_WealthFreedom() {
-  const { fetchMetrics } = useWealthFreedom()
-
-  useEffect(() => {
-    void fetchMetrics()
-  }, [fetchMetrics])
-
   return (
     <div className="space-y-10 px-8 py-10">
       <header>
@@ -36,11 +29,7 @@ export default function P2_1_WealthFreedom() {
 
       <IncomeSection />
 
-      <section className="rounded-comfortable border border-dashed border-black/15 bg-brand-light-gray/40 p-8 text-center">
-        <p className="text-body text-fg-tertiary">
-          财富自由倒计时 将在 3.3e 实现
-        </p>
-      </section>
+      <WealthCountdown />
     </div>
   )
 }
