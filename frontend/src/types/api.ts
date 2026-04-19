@@ -29,3 +29,27 @@ export interface AddAssetResponse {
   is_active: boolean
   created_at: string
 }
+
+export interface AddTransactionRequest {
+  asset_id: number
+  type: 'buy' | 'sell'
+  quantity: number
+  price: number
+  exchange_rate_to_cny: number
+  date: string
+  reason: string | null
+}
+
+export interface TransactionResponse {
+  transaction_id: number
+  asset_id: number
+  type: 'buy' | 'sell' | 'close'
+  quantity: number
+  price: number
+  date: string
+  created_at: string
+}
+
+export interface CloseAssetRequest {
+  reason: string | null
+}

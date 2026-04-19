@@ -7,12 +7,19 @@ import {
 } from 'react'
 import {
   addAsset as addAssetApi,
+  closeAsset as closeAssetApi,
   fetchAssets as fetchAssetsApi,
 } from '../services/api/assets'
 import { refreshMarket as refreshMarketApi } from '../services/api/market'
+import { addTransaction as addTransactionApi } from '../services/api/transactions'
 import { toReadableMessage } from '../utils/errors'
 import type { RefreshResponse } from '../types/entities'
-import type { AddAssetRequest, AddAssetResponse } from '../types/api'
+import type {
+  AddAssetRequest,
+  AddAssetResponse,
+  AddTransactionRequest,
+  TransactionResponse,
+} from '../types/api'
 import {
   AssetsContext,
   type AssetsContextValue,
@@ -66,6 +73,23 @@ export function AssetsProvider({ children }: { children: ReactNode }) {
     [fetchAssets, includeClosed],
   )
 
+  const addTransaction = useCallback(
+    async (payload: AddTransactionRequest): Promise<TransactionResponse> => {
+      const result = await addTransactionApi(payload)
+      await fetchAssets({ includeClosed, force: true })
+      return result
+    },
+    [fetchAssets, includeClosed],
+  )
+
+  const closeAsset = useCallback(
+    async (assetId: number, reason: string | null): Promise<void> => {
+      await closeAssetApi(assetId, { reason })
+      await fetchAssets({ includeClosed, force: true })
+    },
+    [fetchAssets, includeClosed],
+  )
+
   const refreshMarket = useCallback(async (): Promise<RefreshResponse | null> => {
     setRefreshing(true)
     setError(null)
@@ -97,6 +121,8 @@ export function AssetsProvider({ children }: { children: ReactNode }) {
       fetchAssets,
       refreshMarket,
       addAsset,
+      addTransaction,
+      closeAsset,
     }),
     [
       assets,
@@ -109,6 +135,8 @@ export function AssetsProvider({ children }: { children: ReactNode }) {
       fetchAssets,
       refreshMarket,
       addAsset,
+      addTransaction,
+      closeAsset,
     ],
   )
 

@@ -5,8 +5,10 @@ import BestWorstCards from '../components/common/BestWorstCards'
 import RefreshButton from '../components/common/RefreshButton'
 import SummaryCard from '../components/common/SummaryCard'
 import AddAssetDialog from '../components/dialogs/AddAssetDialog'
+import UpdatePositionDialog from '../components/dialogs/UpdatePositionDialog'
 import { useAssets } from '../hooks/useAssets'
 import { formatCurrency, formatPercent } from '../utils/formatters'
+import type { AssetDetail } from '../types/entities'
 
 function deriveTrend(
   value: number | null | undefined,
@@ -18,6 +20,7 @@ function deriveTrend(
 export default function P1_Home() {
   const { assets, summary, loading, error, fetchAssets } = useAssets()
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [updatingAsset, setUpdatingAsset] = useState<AssetDetail | null>(null)
 
   useEffect(() => {
     void fetchAssets({ includeClosed: false })
@@ -86,7 +89,11 @@ export default function P1_Home() {
         {!loading && !error && (
           <div className="mt-6 grid grid-cols-3 gap-4">
             {assets.map((asset) => (
-              <AssetCard key={asset.asset_id} asset={asset} />
+              <AssetCard
+                key={asset.asset_id}
+                asset={asset}
+                onUpdate={setUpdatingAsset}
+              />
             ))}
             <AddAssetCard onClick={() => setDialogOpen(true)} />
           </div>
@@ -96,6 +103,10 @@ export default function P1_Home() {
       <AddAssetDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
+      />
+      <UpdatePositionDialog
+        asset={updatingAsset}
+        onClose={() => setUpdatingAsset(null)}
       />
     </div>
   )

@@ -1,6 +1,10 @@
 import { client } from './client'
 import type { AssetsListResponse } from '../../types/entities'
-import type { AddAssetRequest, AddAssetResponse } from '../../types/api'
+import type {
+  AddAssetRequest,
+  AddAssetResponse,
+  CloseAssetRequest,
+} from '../../types/api'
 
 export async function fetchAssets(
   includeClosed = false,
@@ -16,4 +20,15 @@ export async function addAsset(
 ): Promise<AddAssetResponse> {
   const { data } = await client.post<AddAssetResponse>('/assets', payload)
   return data
+}
+
+export async function closeAsset(
+  assetId: number,
+  payload: CloseAssetRequest,
+): Promise<void> {
+  await client.request({
+    method: 'DELETE',
+    url: `/assets/${assetId}`,
+    data: payload,
+  })
 }

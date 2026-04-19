@@ -4,6 +4,7 @@ import { formatPercent } from '../../utils/formatters'
 
 interface AssetCardProps {
   asset: AssetDetail
+  onUpdate?: (asset: AssetDetail) => void
 }
 
 function deriveTrend(
@@ -25,7 +26,7 @@ const RATE_COLOR: Record<'up' | 'down' | 'neutral', string> = {
   neutral: 'text-fg-secondary',
 }
 
-export default function AssetCard({ asset }: AssetCardProps) {
+export default function AssetCard({ asset, onUpdate }: AssetCardProps) {
   const trend = deriveTrend(asset.monthly_return_rate)
 
   return (
@@ -43,6 +44,15 @@ export default function AssetCard({ asset }: AssetCardProps) {
       <div className={clsx('mt-1 text-tile-heading num', RATE_COLOR[trend])}>
         {formatPercent(asset.monthly_return_rate, true)}
       </div>
+      {onUpdate && asset.is_active && (
+        <button
+          type="button"
+          onClick={() => onUpdate(asset)}
+          className="mt-5 self-start rounded-standard border border-black/10 bg-brand-white/70 px-3 py-1.5 text-caption text-fg-secondary transition-colors hover:border-black/20 hover:bg-brand-white hover:text-fg-primary"
+        >
+          更新持仓信息
+        </button>
+      )}
     </div>
   )
 }
