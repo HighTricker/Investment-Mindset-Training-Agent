@@ -76,18 +76,17 @@ export default function TransactionDrawer({
   return (
     <div
       className={clsx(
-        'fixed inset-0 z-50 transition-opacity duration-300',
-        open
-          ? 'pointer-events-auto opacity-100'
-          : 'pointer-events-none opacity-0',
+        'pointer-events-none fixed inset-0 z-50 transition-opacity duration-300',
+        open ? 'opacity-100' : 'opacity-0',
       )}
     >
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40" />
       <aside
         className={clsx(
           'fixed right-0 top-0 flex h-screen w-[400px] max-w-[90vw] flex-col',
           'bg-brand-white shadow-card',
           'transition-transform duration-300 ease-out',
+          open && 'pointer-events-auto',
           open ? 'translate-x-0' : 'translate-x-full',
         )}
       >
