@@ -8,6 +8,8 @@ import {
 
 interface AssetsTableProps {
   assets: AssetDetail[]
+  onRowClick?: (asset: AssetDetail) => void
+  selectedAssetId?: number | null
 }
 
 const COLUMNS: { key: string; label: string; align?: 'left' | 'right' }[] = [
@@ -31,7 +33,11 @@ function rateClass(value: number | null): string {
   return value > 0 ? 'text-finance-up' : 'text-finance-down'
 }
 
-export default function AssetsTable({ assets }: AssetsTableProps) {
+export default function AssetsTable({
+  assets,
+  onRowClick,
+  selectedAssetId,
+}: AssetsTableProps) {
   if (assets.length === 0) {
     return (
       <p className="text-body text-fg-tertiary">暂无持仓数据</p>
@@ -60,9 +66,14 @@ export default function AssetsTable({ assets }: AssetsTableProps) {
           {assets.map((asset, idx) => (
             <tr
               key={asset.asset_id}
+              onClick={onRowClick ? () => onRowClick(asset) : undefined}
               className={clsx(
-                'border-t border-black/5 transition-colors hover:bg-brand-light-gray/50',
+                'border-t border-black/5 transition-colors',
+                onRowClick && 'cursor-pointer',
                 !asset.is_active && 'italic text-fg-tertiary',
+                selectedAssetId === asset.asset_id
+                  ? 'bg-blue-50 hover:bg-blue-50'
+                  : 'hover:bg-brand-light-gray/50',
               )}
             >
               <td className="num px-3 py-3 text-right">{idx + 1}</td>
