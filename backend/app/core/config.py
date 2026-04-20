@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     report_schedule_cron: str = "0 9 1 * *"
     report_schedule_enabled: bool = False
 
+    # AI 月度点评（P5 报告内 LLM 生成，V3）
+    openai_api_key: str | None = None
+    openai_model: str = "gpt-4o-mini"
+    openai_base_url: str | None = None  # 空则 OpenAI 官方；大陆用户可填 DeepSeek / 智谱 等 OpenAI-compatible 端点
+    ai_commentary_enabled: bool = False
+
     @property
     def database_url(self) -> str:
         """把 db_path（相对 backend/）解析为 SQLAlchemy 绝对路径 URL。"""

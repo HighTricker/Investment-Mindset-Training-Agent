@@ -81,6 +81,7 @@ class ReportData:
     best: AssetReportItem | None
     worst: AssetReportItem | None
     style: dict[str, Any] = field(default_factory=dict)
+    ai_commentary: str | None = None  # V3 LLM 生成；None 时显示"未启用"占位
 
 
 # ============================================================
@@ -193,7 +194,7 @@ def _collect_report_data(
     best = max(rated, key=lambda x: x.monthly_return) if rated else None  # type: ignore[arg-type, return-value]
     worst = min(rated, key=lambda x: x.monthly_return) if rated else None  # type: ignore[arg-type, return-value]
 
-    return ReportData(
+    data = ReportData(
         send_date=send_date,
         month_label=f"{prev_month.month}月",
         year_month_title=f"{prev_month.year} 年 {prev_month.month} 月 投资月报",
@@ -206,6 +207,16 @@ def _collect_report_data(
         worst=worst,
         style=style,
     )
+
+    # AI 月度点评（延迟导入避免循环依赖；失败不阻塞主流程，降级为占位文案）
+    try:
+        from app.services.ai_commentary import generate_ai_commentary
+        data.ai_commentary = generate_ai_commentary(data)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("AI commentary generation skipped: %s", e)
+        data.ai_commentary = None
+
+    return data
 
 
 def _build_asset_item(
@@ -370,7 +381,9 @@ def _render_html(data: ReportData) -> str:
     overview = _render_overview(data, colors, typo, spacing, radius)
     best_worst = _render_best_worst(data, colors, typo, spacing, radius)
     cards_grid = _render_asset_cards(data, colors, typo, spacing, radius)
-    ai_section = _render_ai_placeholder(colors, typo, spacing, radius)
+    ai_section = _render_ai_placeholder(
+        colors, typo, spacing, radius, data.ai_commentary,
+    )
     detail_table = _render_detail_table(data, colors, typo, spacing)
     footer = _render_footer(footer_text, brand, colors, typo)
 
@@ -486,18 +499,39 @@ def _render_asset_cards(data: ReportData, colors: dict, typo: dict, spacing: dic
     )
 
 
-def _render_ai_placeholder(colors: dict, typo: dict, spacing: dict, radius: str) -> str:
+def _render_ai_placeholder(
+    colors: dict, typo: dict, spacing: dict, radius: str,
+    commentary: str | None = None,
+) -> str:
     bg = colors.get("neutral_background", "#F2F2F7")
     secondary = colors.get("text_secondary", "#8E8E93")
+    title = colors.get("title", "#1C1C1E")
+    text = colors.get("text_primary", "#1C1C1E")
+    border = colors.get("border", "#D1D1D6")
+
+    if commentary:
+        # 真实 AI 生成点评：正常字体 + 行高 1.7 阅读舒适；white-space:pre-wrap 保留换行
+        body_html = (
+            f'<div style="margin-top:10px;font-size:14px;line-height:1.7;'
+            f'color:{text};white-space:pre-wrap">{commentary}</div>'
+        )
+    else:
+        # 未启用占位：灰色斜体提示
+        body_html = (
+            f'<div style="margin-top:8px;font-size:13px;color:{secondary};'
+            f'font-style:italic">'
+            f'（AI 点评未启用）在 backend/.env 设 AI_COMMENTARY_ENABLED=true 并填 '
+            f'OPENAI_API_KEY 后，此处将自动生成约 150 字智能月度分析。'
+            f'</div>'
+        )
+
     return (
         f'<div style="background:{bg};padding:16px;border-radius:{radius};'
-        f'margin:24px 0;border:1px dashed {colors.get("border", "#D1D1D6")}">'
-        f'<div style="font-size:14px;font-weight:600;'
-        f'color:{colors.get("title", "#1C1C1E")}">🤖 AI 月度点评</div>'
-        f'<div style="margin-top:8px;font-size:13px;color:{secondary};font-style:italic">'
-        f'（功能待开发）V3 阶段接入 LLM 生成约 150 字智能点评，'
-        f'基于本月表现、收益率分布、仓位变化自动生成。'
-        f'</div></div>'
+        f'margin:24px 0;border:1px dashed {border}">'
+        f'<div style="font-size:14px;font-weight:600;color:{title}">'
+        f'🤖 AI 月度点评</div>'
+        f'{body_html}'
+        f'</div>'
     )
 
 
