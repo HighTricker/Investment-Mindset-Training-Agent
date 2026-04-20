@@ -90,3 +90,15 @@ export interface AddIncomeRequest {
   currency: CashOrIncomeCurrency
   note: string | null
 }
+
+export interface ReportRequest {
+  send_date?: string
+}
+
+export interface SendReportResponse {
+  status: string
+  recipient: string
+  send_date: string
+  subject: string
+  sent_at: string
+}
