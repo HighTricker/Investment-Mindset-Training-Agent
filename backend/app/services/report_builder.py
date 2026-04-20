@@ -154,6 +154,7 @@ def _collect_report_data(
     db: Session, send_date: date, style: dict[str, Any],
 ) -> ReportData:
     prev_month = _previous_month_first_day(send_date)
+    prev_prev_month = _previous_month_first_day(prev_month)
     current_month = _current_month_first_day(send_date)
 
     assets = db.execute(
@@ -170,7 +171,9 @@ def _collect_report_data(
     for asset in assets:
         items.append(_build_asset_item(
             db, asset, send_date_iso,
-            prev_month.isoformat(), current_month.isoformat(),
+            prev_prev_month.isoformat(),
+            prev_month.isoformat(),
+            current_month.isoformat(),
         ))
 
     # 二遍：仓位占比
@@ -207,7 +210,10 @@ def _collect_report_data(
 
 def _build_asset_item(
     db: Session, asset: Asset,
-    send_date_iso: str, prev_month_iso: str, current_month_iso: str,
+    send_date_iso: str,
+    prev_prev_month_iso: str,
+    prev_month_iso: str,
+    current_month_iso: str,
 ) -> AssetReportItem:
     # 交易聚合（只算 send_date 之前的交易）
     txs = db.execute(
@@ -267,20 +273,31 @@ def _build_asset_item(
         if agg.cost_price_original > 0 else None
     )
 
-    # 上月首末日收盘价
-    month_rows = db.execute(
-        select(Price.date, Price.close_price).where(
+    # 月度收益率（行业标准 CFA/FRM 算法）:
+    #   monthly_return = (上月末 close - 上上月末 close) / 上上月末 close
+    # 捕获完整月度价格变动，不丢跨月缝隙；若任一端数据缺失返回 None
+    prev_month_last_close = db.execute(
+        select(Price.close_price).where(
             Price.asset_id == asset.id,
             Price.date >= prev_month_iso,
             Price.date < current_month_iso,
-        ).order_by(Price.date)
-    ).all()
+        ).order_by(Price.date.desc()).limit(1)
+    ).scalar_one_or_none()
+    prev_prev_month_last_close = db.execute(
+        select(Price.close_price).where(
+            Price.asset_id == asset.id,
+            Price.date >= prev_prev_month_iso,
+            Price.date < prev_month_iso,
+        ).order_by(Price.date.desc()).limit(1)
+    ).scalar_one_or_none()
     monthly_return: float | None = None
-    if len(month_rows) >= 2:
-        first_close = float(month_rows[0].close_price)
-        last_close = float(month_rows[-1].close_price)
-        if first_close > 0:
-            monthly_return = (last_close - first_close) / first_close
+    if (
+        prev_month_last_close is not None
+        and prev_prev_month_last_close is not None
+    ):
+        base = float(prev_prev_month_last_close)
+        if base > 0:
+            monthly_return = (float(prev_month_last_close) - base) / base
 
     return AssetReportItem(
         asset_id=asset.id,
