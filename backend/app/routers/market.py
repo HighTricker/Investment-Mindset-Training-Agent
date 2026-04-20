@@ -23,6 +23,7 @@ from app.schemas.market import (
 from app.services.market_data import (
     ExternalSourceError,
     SymbolNotFoundError,
+    fetch_current_price,
     fetch_exchange_rate,
     lookup_symbol,
 )
@@ -131,7 +132,7 @@ def refresh_market_data(db: Session = Depends(get_db)) -> RefreshResponse:
     prices_updated = 0
     for asset in active_assets:
         try:
-            info = lookup_symbol(asset.symbol)
+            price = fetch_current_price(asset.symbol, asset.category)
         except (SymbolNotFoundError, ExternalSourceError) as e:
             failed_assets.append(
                 FailedAsset(asset_id=asset.id, symbol=asset.symbol, error=str(e))
@@ -140,14 +141,10 @@ def refresh_market_data(db: Session = Depends(get_db)) -> RefreshResponse:
 
         upsert_price = (
             sqlite_insert(Price)
-            .values(
-                asset_id=asset.id,
-                date=today,
-                close_price=info.current_price_original,
-            )
+            .values(asset_id=asset.id, date=today, close_price=price)
             .on_conflict_do_update(
                 index_elements=["asset_id", "date"],
-                set_={"close_price": info.current_price_original},
+                set_={"close_price": price},
             )
         )
         db.execute(upsert_price)

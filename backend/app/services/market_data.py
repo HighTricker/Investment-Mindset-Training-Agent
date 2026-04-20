@@ -4,11 +4,13 @@
 对外暴露领域 API：
     - `infer_category(symbol)`：纯字符串规则推断资产类别
     - `lookup_symbol(symbol)` → SymbolInfo：按 symbol 查 name/currency/price
+    - `fetch_current_price(symbol, category)` → float：只拿最新价（供 refresh，
+      不查 name 因此比 lookup_symbol 快 5-10 倍，且覆盖 AU9999/ETF）
     - `fetch_exchange_rate(currency)` → float：某币种对 CNY 的汇率
 
 上层 routers 只调用本模块公开函数，不直接接触 yfinance/akshare 的 API。
 
-异常模型：
+异常模型:
     - `SymbolNotFoundError`：在所有数据源中都找不到该代码 → 上层映射 INVALID_SYMBOL (422)
     - `ExternalSourceError`：外部数据源超时/异常 → 上层映射 EXTERNAL_SOURCE_FAILED (502)
 """
@@ -93,6 +95,34 @@ def lookup_symbol(symbol: str) -> SymbolInfo:
     except Exception as e:
         logger.exception("lookup_symbol failed: symbol=%s", symbol)
         raise ExternalSourceError(f"数据源查询异常：{e}") from e
+
+
+def fetch_current_price(symbol: str, category: str) -> float:
+    """按 symbol + category 拉最新价（供 POST /market/refresh 专用）。
+
+    与 `lookup_symbol` 的差异：不查 name（不调 yfinance 的慢接口 `ticker.info`），
+    且按 category 精确路由数据源，原生支持 AU9999（SGE）和 A 股 ETF（东方财富）。
+
+    路由规则:
+        - category='黄金' 且 symbol 以 'AU' 开头 → 上海黄金交易所 Au99.99
+        - _is_a_share(symbol) 且 category='中国国债' → 东方财富 ETF 历史接口
+        - _is_a_share(symbol) 其他情况 → A 股实时快照
+        - 其他 → yfinance fast_info
+    """
+    symbol = symbol.strip()
+    try:
+        if category == "黄金" and symbol.upper().startswith("AU"):
+            return _fetch_price_sge()
+        if _is_a_share(symbol):
+            if category == "中国国债":
+                return _fetch_price_a_share_etf(symbol)
+            return _fetch_price_a_share_stock(symbol)
+        return _fetch_price_yfinance(symbol)
+    except (SymbolNotFoundError, ExternalSourceError):
+        raise
+    except Exception as e:
+        logger.exception("fetch_current_price failed: symbol=%s", symbol)
+        raise ExternalSourceError(f"价格查询异常：{e}") from e
 
 
 def fetch_exchange_rate(currency: str) -> float:
@@ -206,6 +236,84 @@ def _lookup_via_akshare(symbol: str, category: str) -> SymbolInfo:
         category=category,
         current_price_original=price,
     )
+
+
+# ============================================================
+# 内部：现价拉取（供 fetch_current_price）
+# ============================================================
+def _fetch_price_yfinance(symbol: str) -> float:
+    try:
+        fast = yf.Ticker(symbol).fast_info
+        raw = getattr(fast, "last_price", None)
+    except Exception as e:
+        raise ExternalSourceError(f"yfinance fast_info 异常：{e}") from e
+    if raw is None:
+        raise SymbolNotFoundError(f"yfinance 未找到报价：{symbol}")
+    try:
+        price = float(raw)
+    except (TypeError, ValueError):
+        raise SymbolNotFoundError(f"yfinance 非法价格：{symbol}={raw!r}")
+    if price <= 0:
+        raise SymbolNotFoundError(f"yfinance 非正价格：{symbol}={price}")
+    return price
+
+
+def _fetch_price_sge() -> float:
+    """上海黄金交易所 Au99.99 最近一个交易日收盘。"""
+    try:
+        df = ak.spot_hist_sge(symbol="Au99.99")
+    except Exception as e:
+        raise ExternalSourceError(f"akshare sge 异常：{e}") from e
+    if df.empty:
+        raise SymbolNotFoundError("SGE 返回空")
+    try:
+        price = float(df.iloc[-1]["close"])
+    except (KeyError, TypeError, ValueError) as e:
+        raise ExternalSourceError(f"SGE 字段解析失败：{e}") from e
+    if price <= 0:
+        raise SymbolNotFoundError(f"SGE 非正价格：{price}")
+    return price
+
+
+def _fetch_price_a_share_etf(symbol: str) -> float:
+    """A 股 ETF 近期最新收盘（东方财富 K 线最后一行）。"""
+    from datetime import datetime, timedelta
+    end = datetime.now().strftime("%Y%m%d")
+    start = (datetime.now() - timedelta(days=15)).strftime("%Y%m%d")
+    try:
+        df = ak.fund_etf_hist_em(
+            symbol=symbol, period="daily",
+            start_date=start, end_date=end, adjust="",
+        )
+    except Exception as e:
+        raise ExternalSourceError(f"akshare ETF 异常：{e}") from e
+    if df.empty:
+        raise SymbolNotFoundError(f"ETF 返回空：{symbol}")
+    try:
+        price = float(df.iloc[-1]["收盘"])
+    except (KeyError, TypeError, ValueError) as e:
+        raise ExternalSourceError(f"ETF 字段解析失败：{e}") from e
+    if price <= 0:
+        raise SymbolNotFoundError(f"ETF 非正价格：{symbol}={price}")
+    return price
+
+
+def _fetch_price_a_share_stock(symbol: str) -> float:
+    """A 股 stock 实时行情（`stock_zh_a_spot_em` 全市场快照）。"""
+    try:
+        df = ak.stock_zh_a_spot_em()
+    except Exception as e:
+        raise ExternalSourceError(f"akshare spot_em 异常：{e}") from e
+    row = df[df["代码"] == symbol]
+    if row.empty:
+        raise SymbolNotFoundError(f"A 股未找到：{symbol}")
+    try:
+        price = float(row.iloc[0]["最新价"])
+    except (KeyError, TypeError, ValueError) as e:
+        raise ExternalSourceError(f"A 股字段解析失败：{e}") from e
+    if price <= 0:
+        raise SymbolNotFoundError(f"A 股停牌或异常：{symbol}={price}")
+    return price
 
 
 # ============================================================
