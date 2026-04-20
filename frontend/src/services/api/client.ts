@@ -21,7 +21,6 @@ client.interceptors.response.use(
         | undefined
       const code = detail?.code ?? error.code ?? 'UNKNOWN'
       const msg = detail?.message ?? error.message
-      // eslint-disable-next-line no-console
       console.warn(`[API] ${status} ${url} → ${code}: ${msg}`)
     }
     return Promise.reject(error)

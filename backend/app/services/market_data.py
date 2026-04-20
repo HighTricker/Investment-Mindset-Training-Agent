@@ -276,26 +276,45 @@ def _fetch_price_sge() -> float:
 
 
 def _fetch_price_a_share_etf(symbol: str) -> float:
-    """A 股 ETF 近期最新收盘（东方财富 K 线最后一行）。"""
+    """A 股 ETF 近期最新收盘（东方财富 K 线最后一行）。
+
+    带 3 次指数退避重试（1s / 2s）应对 eastmoney 的 SSL 偶发握手失败
+    （511260 在部分本地网络环境下 push2his.eastmoney.com 会 SSL 错误）。
+    业务错误（空数据、非正价格）不重试。
+    """
+    import time
     from datetime import datetime, timedelta
     end = datetime.now().strftime("%Y%m%d")
     start = (datetime.now() - timedelta(days=15)).strftime("%Y%m%d")
-    try:
-        df = ak.fund_etf_hist_em(
-            symbol=symbol, period="daily",
-            start_date=start, end_date=end, adjust="",
-        )
-    except Exception as e:
-        raise ExternalSourceError(f"akshare ETF 异常：{e}") from e
-    if df.empty:
-        raise SymbolNotFoundError(f"ETF 返回空：{symbol}")
-    try:
-        price = float(df.iloc[-1]["收盘"])
-    except (KeyError, TypeError, ValueError) as e:
-        raise ExternalSourceError(f"ETF 字段解析失败：{e}") from e
-    if price <= 0:
-        raise SymbolNotFoundError(f"ETF 非正价格：{symbol}={price}")
-    return price
+    last_err: Exception | None = None
+    for attempt in range(3):
+        try:
+            df = ak.fund_etf_hist_em(
+                symbol=symbol, period="daily",
+                start_date=start, end_date=end, adjust="",
+            )
+            if df.empty:
+                raise SymbolNotFoundError(f"ETF 返回空：{symbol}")
+            try:
+                price = float(df.iloc[-1]["收盘"])
+            except (KeyError, TypeError, ValueError) as e:
+                raise ExternalSourceError(f"ETF 字段解析失败：{e}") from e
+            if price <= 0:
+                raise SymbolNotFoundError(f"ETF 非正价格：{symbol}={price}")
+            return price
+        except SymbolNotFoundError:
+            raise  # 业务错误不重试
+        except Exception as e:
+            last_err = e
+            if attempt < 2:
+                logger.warning(
+                    "akshare ETF %s attempt %d failed: %s, retrying...",
+                    symbol, attempt + 1, e,
+                )
+                time.sleep(2 ** attempt)
+    raise ExternalSourceError(
+        f"akshare ETF 重试 3 次仍失败：{symbol}={last_err}"
+    ) from last_err
 
 
 def _fetch_price_a_share_stock(symbol: str) -> float:

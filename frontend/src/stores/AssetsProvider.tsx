@@ -38,7 +38,12 @@ export function AssetsProvider({ children }: { children: ReactNode }) {
     open: false,
     all: false,
   })
-  const [isFetched, setIsFetched] = useState(fetchedRef.current)
+  // isFetched 与 fetchedRef.current 独立初始化（虽然值等价），
+  // 避免 React 19 的 react-hooks/refs 规则告警（render 时读 ref.current）
+  const [isFetched, setIsFetched] = useState<{ open: boolean; all: boolean }>({
+    open: false,
+    all: false,
+  })
 
   const fetchAssets = useCallback(
     async (opts?: { includeClosed?: boolean; force?: boolean }) => {
@@ -53,7 +58,14 @@ export function AssetsProvider({ children }: { children: ReactNode }) {
         setAssets(data.assets)
         setSummary(data.summary)
         setIncludeClosed(wantClosed)
-        fetchedRef.current = { ...fetchedRef.current, [bucket]: true }
+        // force 时同时 invalidate 另一个桶：写操作后另一桶的缓存已陈旧，
+        // 下次跨页访问会自动重拉，避免 P1 加资产 → 切 P3.1 看到旧列表
+        const otherBucket: 'open' | 'all' = bucket === 'open' ? 'all' : 'open'
+        fetchedRef.current = {
+          ...fetchedRef.current,
+          [bucket]: true,
+          ...(force ? { [otherBucket]: false } : {}),
+        }
         setIsFetched(fetchedRef.current)
       } catch (err) {
         setError(toReadableMessage(err))
