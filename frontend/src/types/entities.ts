@@ -39,6 +39,28 @@ export interface Transaction {
   created_at: string
 }
 
+export interface AssetHeader {
+  asset_id: number
+  symbol: string
+  name: string
+  is_active: boolean
+}
+
+export interface TransactionDetailItem {
+  transaction_id: number
+  type: TransactionType
+  date: string
+  quantity: number
+  price: number
+  exchange_rate_to_cny: number
+  reason: string | null
+}
+
+export interface AssetTransactionsResponse {
+  asset: AssetHeader
+  transactions: TransactionDetailItem[]
+}
+
 export interface BestWorstAsset {
   asset_id: number
   symbol: string

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import AssetsTable from '../components/common/AssetsTable'
+import TransactionDrawer from '../components/p3_1/TransactionDrawer'
 import { useAssets } from '../hooks/useAssets'
 import type { AssetDetail } from '../types/entities'
 
@@ -46,6 +47,11 @@ export default function P3_1_Assets() {
           </div>
         )}
       </section>
+
+      <TransactionDrawer
+        assetId={selectedAssetId}
+        onClose={() => setSelectedAssetId(null)}
+      />
     </div>
   )
 }
