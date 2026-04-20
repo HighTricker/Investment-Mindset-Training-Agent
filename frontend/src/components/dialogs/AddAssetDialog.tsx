@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
+import clsx from 'clsx'
 import { useAssets } from '../../hooks/useAssets'
 import { lookupSymbol } from '../../services/api/market'
 import { toReadableMessage } from '../../utils/errors'
+import {
+  inputToQuantity,
+  UNIT_LABELS,
+  type InputUnit,
+} from '../../utils/unitConverter'
 import type { SymbolLookupResponse } from '../../types/api'
 
 interface AddAssetDialogProps {
@@ -26,6 +32,7 @@ export default function AddAssetDialog({
   const [lookupError, setLookupError] = useState<string | null>(null)
 
   const [quantity, setQuantity] = useState('')
+  const [unit, setUnit] = useState<InputUnit>('shares')
   const [price, setPrice] = useState('')
   const [exchangeRate, setExchangeRate] = useState('')
   const [date, setDate] = useState(today)
@@ -39,6 +46,7 @@ export default function AddAssetDialog({
       setLookup(null)
       setLookupError(null)
       setQuantity('')
+      setUnit('shares')
       setPrice('')
       setExchangeRate('')
       setDate(today())
@@ -80,11 +88,13 @@ export default function AddAssetDialog({
 
   const handleSubmit = async () => {
     if (!lookup) return
-    const q = Number(quantity)
+    const inputVal = Number(quantity)
     const p = Number(price)
     const r = Number(exchangeRate)
-    if (!Number.isFinite(q) || q <= 0) {
-      setSubmitError('持仓数量必须大于 0')
+    if (!Number.isFinite(inputVal) || inputVal <= 0) {
+      setSubmitError(
+        unit === 'shares' ? '持仓数量必须大于 0' : '投入金额必须大于 0',
+      )
       return
     }
     if (!Number.isFinite(p) || p <= 0) {
@@ -97,6 +107,17 @@ export default function AddAssetDialog({
     }
     if (!date) {
       setSubmitError('请选择买入日期')
+      return
+    }
+    const q = inputToQuantity({
+      input: inputVal,
+      unit,
+      price: p,
+      rateToCny: r,
+      usdToCny: lookup.usd_to_cny,
+    })
+    if (!Number.isFinite(q) || q <= 0) {
+      setSubmitError('换算后的股数无效，请检查价格和汇率')
       return
     }
     setSubmitting(true)
@@ -212,12 +233,18 @@ export default function AddAssetDialog({
             </section>
 
             <section className="mt-6 space-y-4">
-              <Field
-                label="持仓数量"
+              <QuantityField
+                unit={unit}
+                onUnitChange={setUnit}
                 value={quantity}
                 onChange={setQuantity}
-                type="number"
-                placeholder="例如 10"
+                converted={inputToQuantity({
+                  input: Number(quantity),
+                  unit,
+                  price: Number(price),
+                  rateToCny: Number(exchangeRate),
+                  usdToCny: lookup.usd_to_cny,
+                })}
               />
               <Field
                 label={`买入价（${lookup.currency}）`}
@@ -310,6 +337,74 @@ function Field({
         disabled={disabled}
         className="mt-1 w-full rounded-standard border border-black/15 bg-brand-white px-3 py-2 text-body text-fg-primary outline-none focus:border-apple-blue disabled:bg-brand-light-gray disabled:opacity-60"
       />
+    </div>
+  )
+}
+
+function QuantityField({
+  unit,
+  onUnitChange,
+  value,
+  onChange,
+  converted,
+}: {
+  unit: InputUnit
+  onUnitChange: (u: InputUnit) => void
+  value: string
+  onChange: (v: string) => void
+  converted: number
+}) {
+  const label = unit === 'shares' ? '持仓数量' : `投入金额（${unit}）`
+  const placeholder =
+    unit === 'shares' ? '例如 10' : unit === 'USD' ? '例如 1' : '例如 1000'
+  const showHelper = unit !== 'shares' && Number(value) > 0 && converted > 0
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <label className="text-caption text-fg-secondary">{label}</label>
+        <UnitTabs unit={unit} onChange={onUnitChange} />
+      </div>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="mt-1 w-full rounded-standard border border-black/15 bg-brand-white px-3 py-2 text-body text-fg-primary outline-none focus:border-apple-blue"
+      />
+      {showHelper && (
+        <p className="mt-1.5 text-caption text-fg-tertiary">
+          ≈ <span className="num">{converted.toFixed(8)}</span> 股
+        </p>
+      )}
+    </div>
+  )
+}
+
+function UnitTabs({
+  unit,
+  onChange,
+}: {
+  unit: InputUnit
+  onChange: (u: InputUnit) => void
+}) {
+  const units: InputUnit[] = ['shares', 'USD', 'CNY']
+  return (
+    <div className="flex gap-0.5 rounded-standard bg-brand-light-gray p-0.5">
+      {units.map((u) => (
+        <button
+          key={u}
+          type="button"
+          onClick={() => onChange(u)}
+          className={clsx(
+            'rounded-standard px-2.5 py-0.5 text-caption transition-colors',
+            unit === u
+              ? 'bg-brand-white font-semibold text-fg-primary'
+              : 'text-fg-tertiary hover:text-fg-secondary',
+          )}
+        >
+          {UNIT_LABELS[u]}
+        </button>
+      ))}
     </div>
   )
 }

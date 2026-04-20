@@ -7,6 +7,11 @@ import {
   formatCurrency,
   formatNumber,
 } from '../../utils/formatters'
+import {
+  inputToQuantity,
+  UNIT_LABELS,
+  type InputUnit,
+} from '../../utils/unitConverter'
 import type { AssetDetail } from '../../types/entities'
 
 type Action = 'buy' | 'sell' | 'close'
@@ -24,9 +29,11 @@ export default function UpdatePositionDialog({
   asset,
   onClose,
 }: UpdatePositionDialogProps) {
-  const { addTransaction, closeAsset } = useAssets()
+  const { addTransaction, closeAsset, summary } = useAssets()
+  const usdToCny = summary?.usd_to_cny ?? null
 
   const [action, setAction] = useState<Action>('buy')
+  const [unit, setUnit] = useState<InputUnit>('shares')
   const [quantity, setQuantity] = useState('')
   const [price, setPrice] = useState('')
   const [exchangeRate, setExchangeRate] = useState('')
@@ -40,6 +47,7 @@ export default function UpdatePositionDialog({
   useEffect(() => {
     if (open && asset) {
       setAction('buy')
+      setUnit('shares')
       setQuantity('')
       setPrice(
         asset.current_price_original != null
@@ -75,11 +83,11 @@ export default function UpdatePositionDialog({
       return
     }
 
-    const q = Number(quantity)
+    const inputVal = Number(quantity)
     const p = Number(price)
     const r = Number(exchangeRate)
-    if (!Number.isFinite(q) || q <= 0) {
-      setError('数量必须大于 0')
+    if (!Number.isFinite(inputVal) || inputVal <= 0) {
+      setError(unit === 'shares' ? '数量必须大于 0' : '金额必须大于 0')
       return
     }
     if (!Number.isFinite(p) || p <= 0) {
@@ -92,6 +100,21 @@ export default function UpdatePositionDialog({
     }
     if (!date) {
       setError('请选择日期')
+      return
+    }
+    if (unit === 'USD' && (!usdToCny || usdToCny <= 0)) {
+      setError('USD 汇率未就绪，请先在 P1 刷新市场数据')
+      return
+    }
+    const q = inputToQuantity({
+      input: inputVal,
+      unit,
+      price: p,
+      rateToCny: r,
+      usdToCny: usdToCny ?? 0,
+    })
+    if (!Number.isFinite(q) || q <= 0) {
+      setError('换算后股数无效，请检查输入')
       return
     }
 
@@ -203,16 +226,20 @@ export default function UpdatePositionDialog({
         <section className="mt-6 space-y-4">
           {(action === 'buy' || action === 'sell') && (
             <>
-              <Field
-                label={action === 'buy' ? '加仓数量' : '减仓数量'}
+              <QuantityField
+                unit={unit}
+                onUnitChange={setUnit}
                 value={quantity}
                 onChange={setQuantity}
-                type="number"
-                placeholder={
-                  action === 'sell'
-                    ? `最多 ${formatNumber(asset.quantity, 4)}`
-                    : '例如 5'
-                }
+                converted={inputToQuantity({
+                  input: Number(quantity),
+                  unit,
+                  price: Number(price),
+                  rateToCny: Number(exchangeRate),
+                  usdToCny: usdToCny ?? 0,
+                })}
+                action={action}
+                maxShares={action === 'sell' ? asset.quantity : null}
               />
               <Field
                 label={
@@ -344,6 +371,85 @@ function Field({
         disabled={disabled}
         className="mt-1 w-full rounded-standard border border-black/15 bg-brand-white px-3 py-2 text-body text-fg-primary outline-none focus:border-apple-blue disabled:bg-brand-light-gray disabled:opacity-60"
       />
+    </div>
+  )
+}
+
+function QuantityField({
+  unit,
+  onUnitChange,
+  value,
+  onChange,
+  converted,
+  action,
+  maxShares,
+}: {
+  unit: InputUnit
+  onUnitChange: (u: InputUnit) => void
+  value: string
+  onChange: (v: string) => void
+  converted: number
+  action: 'buy' | 'sell'
+  maxShares: number | null
+}) {
+  const verb = action === 'buy' ? '加仓' : '减仓'
+  const label = unit === 'shares' ? `${verb}数量（股）` : `${verb}金额（${unit}）`
+  const placeholder =
+    unit === 'shares'
+      ? action === 'sell' && maxShares != null
+        ? `最多 ${formatNumber(maxShares, 4)}`
+        : '例如 5'
+      : unit === 'USD'
+        ? '例如 1'
+        : '例如 1000'
+  const showHelper = unit !== 'shares' && Number(value) > 0 && converted > 0
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <label className="text-caption text-fg-secondary">{label}</label>
+        <UnitTabs unit={unit} onChange={onUnitChange} />
+      </div>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="mt-1 w-full rounded-standard border border-black/15 bg-brand-white px-3 py-2 text-body text-fg-primary outline-none focus:border-apple-blue"
+      />
+      {showHelper && (
+        <p className="mt-1.5 text-caption text-fg-tertiary">
+          ≈ <span className="num">{converted.toFixed(8)}</span> 股
+        </p>
+      )}
+    </div>
+  )
+}
+
+function UnitTabs({
+  unit,
+  onChange,
+}: {
+  unit: InputUnit
+  onChange: (u: InputUnit) => void
+}) {
+  const units: InputUnit[] = ['shares', 'USD', 'CNY']
+  return (
+    <div className="flex gap-0.5 rounded-standard bg-brand-light-gray p-0.5">
+      {units.map((u) => (
+        <button
+          key={u}
+          type="button"
+          onClick={() => onChange(u)}
+          className={clsx(
+            'rounded-standard px-2.5 py-0.5 text-caption transition-colors',
+            unit === u
+              ? 'bg-brand-white font-semibold text-fg-primary'
+              : 'text-fg-tertiary hover:text-fg-secondary',
+          )}
+        >
+          {UNIT_LABELS[u]}
+        </button>
+      ))}
     </div>
   )
 }

@@ -22,6 +22,10 @@ class SymbolLookupResponse(SymbolInfo):
     """接口 #1 GET /market/symbol-lookup 的响应：在 SymbolInfo 基础上加汇率。"""
 
     exchange_rate_to_cny: float = Field(..., gt=0, description="1 单位原币 = 多少 CNY")
+    usd_to_cny: float = Field(
+        ..., gt=0,
+        description="1 USD = 多少 CNY（供前端按 USD 金额换算股数，非 USD 资产也返回）",
+    )
 
 
 # ============================================================

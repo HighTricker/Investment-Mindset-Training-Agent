@@ -5,7 +5,7 @@ import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Path, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
@@ -325,11 +325,19 @@ def list_assets(
         else None
     )
 
+    usd_to_cny = db.execute(
+        select(ExchangeRate.rate_to_cny)
+        .where(ExchangeRate.currency == "USD")
+        .order_by(desc(ExchangeRate.date))
+        .limit(1)
+    ).scalar_one_or_none()
+
     summary = AssetSummary(
         total_initial_investment_cny=total_initial_cny,
         total_current_value_cny=total_value_cny,
         total_return_rate=total_return_rate(total_value_cny, total_initial_cny),
         total_profit_loss_cny=total_value_cny - total_initial_cny,
+        usd_to_cny=float(usd_to_cny) if usd_to_cny is not None else None,
         best_asset=(
             BestWorstAsset(
                 asset_id=best.asset_id,

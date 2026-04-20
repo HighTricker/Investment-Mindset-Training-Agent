@@ -12,6 +12,7 @@ export interface SymbolLookupResponse {
   category: AssetCategory
   current_price_original: number
   exchange_rate_to_cny: number
+  usd_to_cny: number
 }
 
 export interface AddAssetRequest {

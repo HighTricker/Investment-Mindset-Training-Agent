@@ -67,7 +67,14 @@ def get_symbol_lookup(
         )
 
     rate = _get_or_fetch_exchange_rate(db, info.currency)
-    return SymbolLookupResponse(**info.model_dump(), exchange_rate_to_cny=rate)
+    usd_to_cny = (
+        rate if info.currency == "USD" else _get_or_fetch_exchange_rate(db, "USD")
+    )
+    return SymbolLookupResponse(
+        **info.model_dump(),
+        exchange_rate_to_cny=rate,
+        usd_to_cny=usd_to_cny,
+    )
 
 
 def _get_or_fetch_exchange_rate(db: Session, currency: str) -> float:

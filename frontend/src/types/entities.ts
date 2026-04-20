@@ -76,6 +76,7 @@ export interface AssetsSummary {
   total_profit_loss_cny: number
   best_asset: BestWorstAsset | null
   worst_asset: BestWorstAsset | null
+  usd_to_cny: number | null
 }
 
 export interface AssetsListResponse {

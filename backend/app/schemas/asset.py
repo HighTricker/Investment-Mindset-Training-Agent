@@ -79,6 +79,7 @@ class AssetSummary(BaseModel):
     total_profit_loss_cny: float
     best_asset: BestWorstAsset | None
     worst_asset: BestWorstAsset | None
+    usd_to_cny: float | None = None  # 最新 USD/CNY 汇率，供前端 Dialog 按 USD 金额换算用
 
 
 class AssetListResponse(BaseModel):
